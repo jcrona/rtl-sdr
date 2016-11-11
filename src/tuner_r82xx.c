@@ -520,6 +520,11 @@ static int r82xx_set_pll(struct r82xx_priv *priv, uint32_t freq, uint32_t *freq_
 		if ((freq_khz * mix_div) >= vco_min)
 			break;
 
+	if (mix_div > 64) {
+		fprintf(stderr, "[R82XX] No valid PLL values for %u Hz!\n", freq);
+		return -1;
+	}
+
 	if (priv->cfg->rafael_chip == CHIP_R828D)
 		vco_power_ref = 1;
 
@@ -552,7 +557,7 @@ static int r82xx_set_pll(struct r82xx_priv *priv, uint32_t freq, uint32_t *freq_
 	 *  vco_div = 65536*(nint + sdm/65536) = int( 0.5 + 65536 * vco_freq / (2 * pll_ref) )
 	 *  vco_div = 65536*nint + sdm         = int( (pll_ref + 65536 * vco_freq) / (2 * pll_ref) )
 	 */
-        
+
 	vco_div = (pll_ref + 65536 * vco_freq) / (2 * pll_ref);
 	nint = (uint32_t) (vco_div / 65536);
 	sdm = (uint32_t) (vco_div % 65536);
@@ -838,9 +843,8 @@ static int r82xx_init_tv_standard(struct r82xx_priv *priv,
 {
 	/* everything that was previously done in r82xx_set_tv_standard
 	 * and doesn't need to be changed when filter settings change */
-	int rc, i;
+	int rc;
 	uint32_t if_khz, filt_cal_lo;
-	uint8_t data[5], val;
 	uint8_t filt_gain, img_r, ext_enable, loop_through;
 	uint8_t lt_att, flt_ext_widest, polyfil_cur;
 
@@ -919,7 +923,7 @@ static int r82xx_init_tv_standard(struct r82xx_priv *priv,
 }
 
 static int update_if_filter(struct r82xx_priv *priv) {
-	int rc, i, hpf, lpf;
+	int rc, hpf, lpf;
 	uint8_t filt_q, hp_cor;
 	int cal;
 
@@ -965,6 +969,8 @@ static int update_if_filter(struct r82xx_priv *priv) {
 	if(cal < 0) cal = 0;
 	else if(cal > 15) cal = 15;
 	priv->fil_cal_code = cal;
+
+	//fprintf(stderr, "Setting IF filter for %d...%d kHz: hp_cor=0x%02x, fil_cal_code=%d\n", hpf, lpf, hp_cor, cal);
 
 	rc = r82xx_write_reg_mask(priv, 0x0a,
 				  filt_q | priv->fil_cal_code, 0x1f);
@@ -1230,17 +1236,22 @@ int r82xx_set_nomod(struct r82xx_priv *priv)
 
 	fprintf(stderr, "Using R820T no-mod direct sampling mode\n");
 
-	/*rc = r82xx_set_bw(priv, 1000000);
-	if (rc < 0)
-		goto err;*/
+	/* should probably play a bit more with the mux settings
+	    to see if something works even better than this */
 
-	/* experimentally determined magic numbers
-	 * needs more experimenting with all the registers */
 	rc = r82xx_set_mux(priv, 300000000);
-	if (rc < 0)
-		goto err;
+	if (rc < 0) goto err;
 
-	r82xx_set_pll(priv, 25000000, NULL);
+	/* the VCO frequency setting still seems to have some effect on the noise floor */
+	rc = r82xx_set_pll(priv, 50000000, NULL);
+	if (rc < 0) goto err;
+
+	/* the most important part: set a divider number that does not really work */
+	rc = r82xx_write_reg_mask(priv, 0x10, 0xd0, 0xe0);
+	if (rc < 0) goto err;
+
+	/* VCO power off */
+	rc = r82xx_write_reg_mask(priv, 0x12, 0xe0, 0xe0);
 
 err:
 	if (rc < 0)
