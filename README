@@ -6,12 +6,12 @@ For more information see:
 http://sdr.osmocom.org/trac/wiki/rtl-sdr
 
 
-Notes on the jcrona tree (2016/11/13)
+Notes on the jcrona tree (2017/10/12)
 =====================================
 
 This is just the tree from mutability (https://github.com/mutability/rtl-sdr)
-as is, that I try to keep in sync with the upstream tree
-(https://github.com/keenerd/rtl-sdr)
+as is, that I try to keep in sync with the upstream trees
+(https://github.com/keenerd/rtl-sdr) and (https://github.com/osmocom/rtl-sdr)
 
 
 Notes on the mutability tree (2014/09/29)
