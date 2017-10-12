@@ -216,6 +216,15 @@ RTLSDR_API int rtlsdr_get_tuner_gains(rtlsdr_dev_t *dev, int *gains);
 RTLSDR_API int rtlsdr_set_tuner_gain(rtlsdr_dev_t *dev, int gain);
 
 /*!
+ * Set the bandwidth for the device.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param bw bandwidth in Hz. Zero means automatic BW selection.
+ * \return 0 on success
+ */
+RTLSDR_API int rtlsdr_set_tuner_bandwidth(rtlsdr_dev_t *dev, uint32_t bw);
+
+/*!
  * Get actual gain the device is configured to.
  *
  * \param dev the device handle given by rtlsdr_open()
@@ -381,6 +390,15 @@ RTLSDR_API int rtlsdr_read_async(rtlsdr_dev_t *dev,
  * \return 0 on success
  */
 RTLSDR_API int rtlsdr_cancel_async(rtlsdr_dev_t *dev);
+
+/*!
+ * Enable or disable the bias tee on GPIO PIN 0.
+ *
+ * \param dev the device handle given by rtlsdr_open()
+ * \param on  1 for Bias T on. 0 for Bias T off.
+ * \return -1 if device is not initialized. 0 otherwise.
+ */
+RTLSDR_API int rtlsdr_set_bias_tee(rtlsdr_dev_t *dev, int on);
 
 #ifdef __cplusplus
 }

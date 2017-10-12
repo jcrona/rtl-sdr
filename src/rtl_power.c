@@ -53,7 +53,7 @@
 #include <io.h>
 #include "getopt/getopt.h"
 #define usleep(x) Sleep(x/1000)
-#if defined(_MSC_VER) && _MSC_VER < 1800
+#if defined(_MSC_VER) && (_MSC_VER < 1800)
 #define round(x) (x > 0.0 ? floor(x + 0.5): ceil(x - 0.5))
 #endif
 #define _USE_MATH_DEFINES
@@ -170,6 +170,7 @@ void usage(void)
 		"\t[-d device_index (default: 0)]\n"
 		"\t[-g tuner_gain (default: automatic)]\n"
 		"\t[-p ppm_error (default: 0)]\n"
+		"\t[-T enable bias-T on GPIO PIN 0 (works for rtl-sdr.com v3 dongles)]\n"
 		"\tfilename (a '-' dumps samples to stdout)\n"
 		"\t  omitting the filename also uses stdout\n"
 		"\n"
@@ -189,7 +190,7 @@ void usage(void)
 		"\t  possible values are 2M to 3.2M\n"
 		"\t[-E enables epoch timestamps (default: off/verbose)]\n"
 		"\t[-P enables peak hold (default: off/averaging)]\n"
-		"\t[-T enables trough hold (default: off/averaging)]\n"
+		"\t[-U enables trough hold (default: off/averaging)]\n"
 		"\t[-L enable linear output (default: off/dB)]\n"
 		"\t[-D direct_sampling_mode, 0 (default/off), 1 (I), 2 (Q), 3 (no-mod)]\n"
 		"\t[-O enable offset tuning (default: off)]\n"
@@ -266,7 +267,7 @@ int cic_9_tables[][10] = {
 	{9, -199, -362, 5303, -25505, 77489, -25505, 5303, -362, -199},
 };
 
-#if defined(_MSC_VER) && _MSC_VER < 1800
+#if defined(_MSC_VER) && (_MSC_VER < 1800)
 double log2(double n)
 {
 	return log(n) / log(2.0);
@@ -1037,6 +1038,7 @@ int main(int argc, char **argv)
 	int single = 0;
 	int direct_sampling = 0;
 	int offset_tuning = 0;
+	int enable_biastee = 0;
 	char *freq_optarg;
 	time_t next_tick;
 	time_t time_now;
@@ -1048,7 +1050,7 @@ int main(int argc, char **argv)
 	init_misc(&ms);
 	strcpy(dev_label, "DEFAULT");
 
-	while ((opt = getopt(argc, argv, "f:i:s:r:t:d:g:p:e:w:c:F:1EPTLD:Oh")) != -1) {
+	while ((opt = getopt(argc, argv, "f:i:s:r:t:d:g:p:e:w:c:F:1EPULD:OhT")) != -1) {
 		switch (opt) {
 		case 'f': // lower:upper:bin_size
 			if (f_set) {
@@ -1116,7 +1118,7 @@ int main(int argc, char **argv)
 		case 'P':
 			ms.peak_hold = 1;
 			break;
-		case 'T':
+		case 'U':
 			ms.peak_hold = -1;
 			break;
 		case 'L':
@@ -1131,6 +1133,9 @@ int main(int argc, char **argv)
 		case 'F':
 			ms.boxcar = 0;
 			ms.comp_fir_size = atoi(optarg);
+			break;
+		case 'T':
+			enable_biastee = 1;
 			break;
 		case 'h':
 		default:
@@ -1211,6 +1216,10 @@ int main(int argc, char **argv)
 		verbose_ppm_eeprom(dev, &ppm_error);
 	}
 	verbose_ppm_set(dev, ppm_error);
+
+	rtlsdr_set_bias_tee(dev, enable_biastee);
+	if (enable_biastee)
+		fprintf(stderr, "activated bias-T on GPIO PIN 0\n");
 
 	if (strcmp(filename, "-") == 0) { /* Write log to stdout */
 		file = stdout;

@@ -128,5 +128,8 @@ int r82xx_set_gain(struct r82xx_priv *priv, int set_manual_gain, int gain);
 int r82xx_set_nomod(struct r82xx_priv *priv);
 int r82xx_set_dither(struct r82xx_priv *priv, int dither);
 int r82xx_set_bw(struct r82xx_priv *priv, uint32_t bw);
+#if 0 /* use the "old" BW code for now */
+int r82xx_set_bandwidth(struct r82xx_priv *priv, int bandwidth,  uint32_t rate);
+#endif
 
 #endif
